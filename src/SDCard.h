@@ -17,7 +17,11 @@ private:
   Stream &m_debug;
   // control access to the SD card
   SemaphoreHandle_t m_mutex;
-
+  // queue up requests
+  QueueHandle_t m_request_queue;
+  // results of reading data
+  QueueHandle_t m_read_queue;
+  void drainQueue();
 public:
   SDCard(Stream &debug, const char *mount_point, gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, gpio_num_t cs);
   ~SDCard();

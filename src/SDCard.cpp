@@ -17,9 +17,49 @@ static const char *TAG = "SDC";
 
 #define SPI_DMA_CHAN SPI_DMA_CH_AUTO
 
+enum class RequestType {
+  READ,
+  WRITE
+};
+
+class Request {
+public:
+  Request(RequestType type, void *data, size_t start_sector, size_t sector_count) : m_type(type), m_start_sector(start_sector), m_sector_count(sector_count) {
+    if (type == RequestType::WRITE) {
+      m_data = malloc(sector_count * 512);
+      memcpy(m_data, data, sector_count * 512);
+    } else if(type == RequestType::READ) {
+      m_data = data;
+    } else {
+      m_data = NULL;
+    }
+  }
+  ~Request() {
+    if (m_type == RequestType::WRITE) {
+      free(m_data);
+    }
+  }
+  RequestType m_type;
+  void *m_data;
+  size_t m_start_sector;
+  size_t m_sector_count;
+};
+
 SDCard::SDCard(Stream &debug, const char *mount_point, gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, gpio_num_t cs) : m_debug(debug)
 {
+  // a mutex to prevent read and write overlapping
   m_mutex = xSemaphoreCreateMutex();
+  // a queue to hold requests (to read or write)
+  m_request_queue = xQueueCreate(10, sizeof(Request *));
+  // a queue to hold the results of read requests
+  m_read_queue = xQueueCreate(10, sizeof(Request *));
+  // create a task to drain the write queue
+  xTaskCreate([](void *param) {
+    SDCard *card = (SDCard *)param;
+    card->drainQueue();
+  }
+  , "SDCard", 4096, this, 1, NULL);
+
   m_host.max_freq_khz = 80000;
   m_mount_point = mount_point;
   esp_err_t ret;
@@ -100,14 +140,49 @@ void SDCard::printCardInfo()
 
 bool SDCard::writeSectors(void *src, size_t start_sector, size_t sector_count) {
   xSemaphoreTake(m_mutex, portMAX_DELAY);
-  esp_err_t result = sdmmc_write_sectors(m_card, src, start_sector, sector_count);
+  // push the write request onto the queue
+  void *data = malloc(sector_count * m_sector_size);
+  memcpy(data, src, sector_count * m_sector_size);
+  Request *req = new Request(RequestType::WRITE, data, start_sector, sector_count);
+  xQueueSend(m_request_queue, &req, portMAX_DELAY);
   xSemaphoreGive(m_mutex);
-  return result==ESP_OK;
+  return true;
+}
+
+void SDCard::drainQueue() {
+  Request *req;
+  while (xQueueReceive(m_request_queue, &req, portMAX_DELAY) == pdTRUE) {
+    // lock the SD card
+    xSemaphoreTake(m_mutex, portMAX_DELAY);
+    digitalWrite(GPIO_NUM_2, HIGH);
+    if (req->m_type == RequestType::WRITE) {
+      esp_err_t res = sdmmc_write_sectors(m_card, req->m_data, req->m_start_sector, req->m_sector_count);
+      delete req;
+    } else if (req->m_type == RequestType::READ) {
+      esp_err_t res = sdmmc_read_sectors(m_card, req->m_data, req->m_start_sector, req->m_sector_count);
+      xQueueSend(m_read_queue, &req, portMAX_DELAY);
+    }
+    digitalWrite(GPIO_NUM_2, LOW);
+    xSemaphoreGive(m_mutex);
+  }
 }
 
 bool SDCard::readSectors(void *dst, size_t start_sector, size_t sector_count) {
   xSemaphoreTake(m_mutex, portMAX_DELAY);
-  esp_err_t res = sdmmc_read_sectors(m_card, dst, start_sector, sector_count);
+  // check to see if the queue has any pending writes
+  if (uxQueueMessagesWaiting(m_request_queue) > 0) {
+    // push our read request onto the queue and wait for it to complete
+    Request *req = new Request(RequestType::READ, dst, start_sector, sector_count);
+    xQueueSend(m_request_queue, &req, portMAX_DELAY);
+    // wait for the read to complete
+    xQueueReceive(m_read_queue, &req, portMAX_DELAY);
+    delete req;
+  } else {
+    digitalWrite(GPIO_NUM_2, HIGH);
+    // no pending writes, so we can just read directly
+    esp_err_t res = sdmmc_read_sectors(m_card, dst, start_sector, sector_count);
+    digitalWrite(GPIO_NUM_2, LOW);
+  }
   xSemaphoreGive(m_mutex);
-  return res==ESP_OK;
+  return true;
 }

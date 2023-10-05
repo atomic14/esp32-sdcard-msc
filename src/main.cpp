@@ -22,36 +22,33 @@ void log(const char *str)
 
 static int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize)
 {
-    digitalWrite(GPIO_NUM_2, HIGH);
     // Serial.printf("Writing %d bytes to %d at offset\n", bufsize, lba, offset);
     // this writes a complete sector so we should return sector size on success
     if (card->writeSectors(buffer, lba, bufsize/512))
     {
-        digitalWrite(GPIO_NUM_2, LOW);
         return bufsize;
     }
-    digitalWrite(GPIO_NUM_2, LOW);
     return bufsize;
     // return -1;
 }
 
 static int32_t onRead(uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize)
 {
-    digitalWrite(GPIO_NUM_2, HIGH);
     // Serial.printf("Reading %d bytes from %d at offset %d\n", bufsize, lba, offset);
     // this reads a complete sector so we should return sector size on success
     if (card->readSectors(buffer, lba, bufsize/512))
     {
-        digitalWrite(GPIO_NUM_2, LOW);
         return bufsize;
     }
-    digitalWrite(GPIO_NUM_2, LOW);
     return -1;
 }
 
 static bool onStartStop(uint8_t power_condition, bool start, bool load_eject)
 {
     Serial.printf("StartStop: %d %d %d\n", power_condition, start, load_eject);
+    if (load_eject) {
+        msc.end();
+    }
     return true;
 }
 
