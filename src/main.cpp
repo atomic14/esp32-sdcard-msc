@@ -1,19 +1,16 @@
 #include <Arduino.h>
 #include "USB.h"
 #include "USBHIDKeyboard.h"
-// #include "MySD.h"
-// #include "SPI.h"
 #include "USBMSC.h"
-// #include "sd_diskio.h"
 
-#include "SDCard.h"
+#include "SDCardLazyWrite.h"
 
 #define BOOT_BUTTON 0
 
 USBHIDKeyboard keyboard;
 USBMSC msc;
 USBCDC Serial;
-SDCard *card;
+SDCardLazyWrite *card;
 
 void log(const char *str)
 {
@@ -68,7 +65,7 @@ void setup()
     // {
     //     log("SD begin");
     // }
-    card = new SDCard(Serial, "/sd", SD_CARD_MISO, SD_CARD_MOSI, SD_CARD_CLK, SD_CARD_CS);
+    card = new SDCardLazyWrite(Serial, "/sd", SD_CARD_MISO, SD_CARD_MOSI, SD_CARD_CLK, SD_CARD_CS);
 
     // keyboard.begin();
     msc.vendorID("ESP32");
