@@ -5,11 +5,11 @@
 #include "SDCardArduino.h"
 
 SDCardArduino::SDCardArduino(Stream &debug, const char *mount_point, gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, gpio_num_t cs)
-: SDCard(debug, mount_point)
+    : SDCard(debug, mount_point)
 {
   static SPIClass spi(HSPI);
-  spi.begin(SD_CARD_CLK, SD_CARD_MISO, SD_CARD_MOSI, SD_CARD_CS);
-  if (SD.begin(SD_CARD_CS, spi, 80000000, mount_point))
+  spi.begin(clk, miso, mosi, cs);
+  if (SD.begin(cs, spi, 40000000, mount_point))
   {
     debug.println("SD card initialized");
   }
@@ -17,6 +17,8 @@ SDCardArduino::SDCardArduino(Stream &debug, const char *mount_point, gpio_num_t 
   {
     debug.println("SD card initialization failed");
   }
+  m_sector_size = SD.sectorSize();
+  m_sector_count = SD.numSectors();
 }
 
 SDCardArduino::~SDCardArduino()
@@ -39,9 +41,11 @@ bool SDCardArduino::writeSectors(uint8_t *src, size_t start_sector, size_t secto
 {
   digitalWrite(GPIO_NUM_2, HIGH);
   bool res = true;
-  for (int i = 0; i<sector_count; i++) {
-    res = SD.writeRAW((uint8_t *)src, start_sector);
-    if (!res) {
+  for (int i = 0; i < sector_count; i++)
+  {
+    res = SD.writeRAW((uint8_t *)src, start_sector + i);
+    if (!res)
+    {
       break;
     }
     src += m_sector_size;
@@ -54,9 +58,11 @@ bool SDCardArduino::readSectors(uint8_t *dst, size_t start_sector, size_t sector
 {
   digitalWrite(GPIO_NUM_2, HIGH);
   bool res = true;
-  for (int i = 0; i<sector_count; i++) {
-    res = SD.readRAW((uint8_t *)dst, start_sector);
-    if (!res) {
+  for (int i = 0; i < sector_count; i++)
+  {
+    res = SD.readRAW((uint8_t *)dst, start_sector + i);
+    if (!res)
+    {
       break;
     }
     dst += m_sector_size;

@@ -59,15 +59,8 @@ bool isBootButtonClicked()
 void setup()
 {
     pinMode(GPIO_NUM_2, OUTPUT);
-    // pinMode(BOOT_BUTTON, INPUT_PULLUP);
 
-    // static SPIClass spi(HSPI);
-    // spi.begin(SD_CARD_CLK, SD_CARD_MISO, SD_CARD_MOSI, SD_CARD_CS);
-    // if (MySD.begin(SD_CARD_CS, spi, 80000000))
-    // {
-    //     log("SD begin");
-    // }
-    card = new SDCardLazyWrite(Serial, "/sd", SD_CARD_MISO, SD_CARD_MOSI, SD_CARD_CLK, SD_CARD_CS);
+    card = new SDCardArduino(Serial, "/sd", SD_CARD_MISO, SD_CARD_MOSI, SD_CARD_CLK, SD_CARD_CS);
 
     // keyboard.begin();
     msc.vendorID("ESP32");
