@@ -46,7 +46,7 @@ public:
 };
 
 SDCardLazyWrite::SDCardLazyWrite(Stream &debug, const char *mount_point, gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, gpio_num_t cs)
-: SDCard(debug, mount_point, miso, mosi, clk, cs)
+: SDCardIdf(debug, mount_point, miso, mosi, clk, cs)
 {
   // a queue to hold requests (to read or write)
   m_request_queue = xQueueCreate(10, sizeof(Request *));
@@ -60,7 +60,7 @@ SDCardLazyWrite::SDCardLazyWrite(Stream &debug, const char *mount_point, gpio_nu
   , "SDCardWriter", 4096, this, 1, NULL);
 }
 
-bool SDCardLazyWrite::writeSectors(void *src, size_t start_sector, size_t sector_count) {
+bool SDCardLazyWrite::writeSectors(uint8_t *src, size_t start_sector, size_t sector_count) {
   xSemaphoreTake(m_mutex, portMAX_DELAY);
   // push the write request onto the queue
   void *data = malloc(sector_count * m_sector_size);
@@ -89,7 +89,7 @@ void SDCardLazyWrite::drainQueue() {
   }
 }
 
-bool SDCardLazyWrite::readSectors(void *dst, size_t start_sector, size_t sector_count) {
+bool SDCardLazyWrite::readSectors(uint8_t *dst, size_t start_sector, size_t sector_count) {
   xSemaphoreTake(m_mutex, portMAX_DELAY);
   // check to see if the queue has any pending writes
   if (uxQueueMessagesWaiting(m_request_queue) > 0) {

@@ -6,7 +6,12 @@
 
 #include "SDCardMultiSector.h"
 
-bool SDCardMultiSector::writeSectors(void *src, size_t start_sector, size_t sector_count) {
+SDCardMultiSector::SDCardMultiSector(Stream &debug, const char *mount_point, gpio_num_t miso, gpio_num_t mosi, gpio_num_t clk, gpio_num_t cs)
+: SDCardIdf(debug, mount_point, miso, mosi, clk, cs)
+{
+}
+
+bool SDCardMultiSector::writeSectors(uint8_t *src, size_t start_sector, size_t sector_count) {
   xSemaphoreTake(m_mutex, portMAX_DELAY);
   digitalWrite(GPIO_NUM_2, HIGH);
   esp_err_t res = sdmmc_write_sectors(m_card, src, start_sector, sector_count);
@@ -15,7 +20,7 @@ bool SDCardMultiSector::writeSectors(void *src, size_t start_sector, size_t sect
   return res == ESP_OK;
 }
 
-bool SDCardMultiSector::readSectors(void *dst, size_t start_sector, size_t sector_count) {
+bool SDCardMultiSector::readSectors(uint8_t *dst, size_t start_sector, size_t sector_count) {
   xSemaphoreTake(m_mutex, portMAX_DELAY);
   digitalWrite(GPIO_NUM_2, HIGH);
   esp_err_t res = sdmmc_read_sectors(m_card, dst, start_sector, sector_count);

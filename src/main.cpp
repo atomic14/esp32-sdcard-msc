@@ -3,6 +3,8 @@
 #include "USBHIDKeyboard.h"
 #include "USBMSC.h"
 
+#include "SDCardArduino.h"
+#include "SDCardMultiSector.h"
 #include "SDCardLazyWrite.h"
 
 #define BOOT_BUTTON 0
@@ -10,7 +12,7 @@
 USBHIDKeyboard keyboard;
 USBMSC msc;
 USBCDC Serial;
-SDCardLazyWrite *card;
+SDCard *card;
 
 void log(const char *str)
 {
@@ -33,7 +35,7 @@ static int32_t onRead(uint32_t lba, uint32_t offset, void *buffer, uint32_t bufs
 {
     // Serial.printf("Reading %d bytes from %d at offset %d\n", bufsize, lba, offset);
     // this reads a complete sector so we should return sector size on success
-    if (card->readSectors(buffer, lba, bufsize/512))
+    if (card->readSectors((uint8_t *) buffer, lba, bufsize/512))
     {
         return bufsize;
     }
