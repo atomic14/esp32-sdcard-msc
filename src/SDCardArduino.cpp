@@ -9,7 +9,7 @@ SDCardArduino::SDCardArduino(Stream &debug, const char *mount_point, gpio_num_t 
 {
   static SPIClass spi(HSPI);
   spi.begin(clk, miso, mosi, cs);
-  if (SD.begin(cs, spi, 40000000, mount_point))
+  if (SD.begin(cs, spi, 80000000, mount_point))
   {
     debug.println("SD card initialized");
   }

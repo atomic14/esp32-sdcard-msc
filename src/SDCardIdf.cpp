@@ -40,7 +40,8 @@ SDCardIdf::SDCardIdf(Stream &debug, const char *mount_point, gpio_num_t miso, gp
       .quadhd_io_num = -1,
       .max_transfer_sz = 16384,
       .flags = 0,
-      .intr_flags = 0};
+      .intr_flags = 0
+  };
   ret = spi_bus_initialize(spi_host_device_t(m_host.slot), &bus_cfg, SPI_DMA_CHAN);
   if (ret != ESP_OK)
   {

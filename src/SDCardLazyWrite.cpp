@@ -24,7 +24,8 @@ enum class RequestType {
 
 class Request {
 public:
-  Request(RequestType type, void *data, size_t start_sector, size_t sector_count) : m_type(type), m_start_sector(start_sector), m_sector_count(sector_count) {
+  Request(RequestType type, void *data, size_t start_sector, size_t sector_count)
+  : m_type(type), m_start_sector(start_sector), m_sector_count(sector_count) {
     if (type == RequestType::WRITE) {
       m_data = malloc(sector_count * 512);
       memcpy(m_data, data, sector_count * 512);
@@ -63,9 +64,7 @@ SDCardLazyWrite::SDCardLazyWrite(Stream &debug, const char *mount_point, gpio_nu
 bool SDCardLazyWrite::writeSectors(uint8_t *src, size_t start_sector, size_t sector_count) {
   xSemaphoreTake(m_mutex, portMAX_DELAY);
   // push the write request onto the queue
-  void *data = malloc(sector_count * m_sector_size);
-  memcpy(data, src, sector_count * m_sector_size);
-  Request *req = new Request(RequestType::WRITE, data, start_sector, sector_count);
+  Request *req = new Request(RequestType::WRITE, src, start_sector, sector_count);
   xQueueSend(m_request_queue, &req, portMAX_DELAY);
   xSemaphoreGive(m_mutex);
   return true;
