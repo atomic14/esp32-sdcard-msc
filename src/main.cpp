@@ -9,10 +9,12 @@
 #define BOOT_BUTTON 0
 
 #define SD_CARD_SPEED_TEST
+#define SPEED_TEST_BUFFER_SIZE 4096
+#define SPEED_TEST_NUMBER_SECTORS (SPEED_TEST_BUFFER_SIZE/512)
 
 #ifndef SD_CARD_SPEED_TEST
 USBMSC msc;
-USBCDC Serial;
+// USBCDC Serial;
 #endif
 SDCard *card;
 
@@ -64,7 +66,11 @@ void setup()
 {
     pinMode(GPIO_NUM_2, OUTPUT);
 
-    card = new SDCardArduino(Serial, "/sd", SD_CARD_MISO, SD_CARD_MOSI, SD_CARD_CLK, SD_CARD_CS);
+    #ifdef USE_SDIO
+    card = new SDCardMultiSector(Serial, "/sd", SD_CARD_CLK, SD_CARD_CMD, SD_CARD_DAT0, SD_CARD_DAT1, SD_CARD_DAT2, SD_CARD_DAT3);
+    #else
+    card = new SDCardMultiSector(Serial, "/sd", SD_CARD_MISO, SD_CARD_MOSI, SD_CARD_CLK, SD_CARD_CS);
+    #endif
 
     #ifdef SD_CARD_SPEED_TEST
     #warning "SD_CARD_SPEED_TEST is enabled - this will potentially corrupt your SD Card!"
@@ -76,19 +82,20 @@ void setup()
     }
     card->printCardInfo();
     Serial.printf("Sector Size=%d\n", card->getSectorSize());
-    // allocate a buffer of 4096 bytes and fill it with random numbers
-    uint8_t *buffer = (uint8_t *) malloc(4096);
-    for(int i = 0; i<4096; i++) {
+    // allocate a buffer of SPEED_TEST_BUFFER_SIZE bytes and fill it with random numbers
+    uint8_t *buffer = (uint8_t *) malloc(SPEED_TEST_BUFFER_SIZE);
+    for(int i = 0; i<SPEED_TEST_BUFFER_SIZE; i++) {
         buffer[i] = random(0, 255);
     }
+    Serial.printf("Starting test: %d, %d\n", SPEED_TEST_BUFFER_SIZE, SPEED_TEST_NUMBER_SECTORS);
     // write 400MBytes of data to the SD Card using the writeSectors method
     int total_write_bytes = 0;
     uint32_t start = millis();
     for(int times = 0; times < 100; times ++) {
-        for(int i = 0; i<256; i++) {
-            if (card->writeSectors(buffer, 100+i*8, 8)) {
-                total_write_bytes+=4096;
-                // Serial.printf(".");
+        for(int i = 0; i<1024*1024/SPEED_TEST_BUFFER_SIZE; i++) {
+            if (card->writeSectors(buffer, 100+i*SPEED_TEST_NUMBER_SECTORS, SPEED_TEST_NUMBER_SECTORS)) {
+                total_write_bytes+=SPEED_TEST_BUFFER_SIZE;
+                // Serial.printf("#");
             } else {
                 Serial.printf("X");
             }
@@ -100,12 +107,12 @@ void setup()
     Serial.printf("Write %dBytes took %dms\n", total_write_bytes, end-start);
     // read 400MBytes of data from the SD Card using the readSectors method
     int total_read_bytes = 0;
-    uint8_t *read_buffer = (uint8_t *) malloc(4096);
+    uint8_t *read_buffer = (uint8_t *) malloc(SPEED_TEST_BUFFER_SIZE);
     start = millis();
     for(int times = 0; times < 100; times ++) {
-        for(int i = 0; i<256; i++) {
-            if(card->readSectors(read_buffer, 100+i*8, 8)) {
-                total_read_bytes+=4096;
+        for(int i = 0; i<1024*1024/SPEED_TEST_BUFFER_SIZE; i++) {
+            if(card->readSectors(read_buffer, 100+i*SPEED_TEST_NUMBER_SECTORS, SPEED_TEST_NUMBER_SECTORS)) {
+                total_read_bytes+=SPEED_TEST_BUFFER_SIZE;
                 // check the numbers match
                 // for(int j = 0; j<4096; j++) {
                 //     if (read_buffer[j] != buffer[j]) {

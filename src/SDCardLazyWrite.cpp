@@ -61,6 +61,21 @@ SDCardLazyWrite::SDCardLazyWrite(Stream &debug, const char *mount_point, gpio_nu
   , "SDCardWriter", 4096, this, 1, NULL);
 }
 
+SDCardLazyWrite::SDCardLazyWrite(Stream &debug, const char *mount_point, gpio_num_t clk, gpio_num_t cmd, gpio_num_t d0, gpio_num_t d1, gpio_num_t d2, gpio_num_t d3)
+: SDCardIdf(debug, mount_point, clk, cmd, d0, d1, d2, d3)
+{
+  // a queue to hold requests (to read or write)
+  m_request_queue = xQueueCreate(10, sizeof(Request *));
+  // a queue to hold the results of read requests
+  m_read_queue = xQueueCreate(10, sizeof(Request *));
+  // create a task to drain the write queue
+  xTaskCreate([](void *param) {
+    SDCardLazyWrite *card = (SDCardLazyWrite *)param;
+    card->drainQueue();
+  }
+  , "SDCardWriter", 4096, this, 1, NULL);
+}
+
 bool SDCardLazyWrite::writeSectors(uint8_t *src, size_t start_sector, size_t sector_count) {
   xSemaphoreTake(m_mutex, portMAX_DELAY);
   // push the write request onto the queue

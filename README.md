@@ -1,4 +1,14 @@
 
+# SD Card Performance Directly Connected to PC
+
+|   | Average Speed (B/s) | Average Speed (Mbytes/s) | Average Speed (Mbits/s) |
+|---|---------------------|--------------------------|-------------------------|
+| **Write** | 27,297,357 | 26.03 | 208.26 |
+| **Read**  | 94,395,970 | 90.02 | 720.18 |
+
+Feel free to use this summarized data as needed!
+
+# SPI 20MHz Clock
 
 ## Arduino SD Card Code - Single Sector Writing
 
@@ -38,3 +48,24 @@
 | Write     | 100           | 103779        | 8.08            | 1.01             |
 | Read      | 100           | 62884         | 13.36           | 1.67             |
 
+
+# SDIO 4-bit 40MHz Clock
+
+| Operation | Size (MBytes) | Duration (ms) | Speed (Mbits/s)        | Speed (MBytes/s)       |
+|-----------|---------------|---------------|------------------------|------------------------|
+| Write     | 100.0         | 44828         | 18.71                  | 2.34                   |
+| Read      | 100.0         | 12492         | 67.15                  | 8.39                   |
+
+## SDIO 4 bit - Multi Sector Writing
+
+| Type        | Test 1 (B/s) | Test 2 (B/s) | Test 3 (B/s) | Test 4 (B/s) | Test 5 (B/s) | Average (Mbits/s) | Average (MBytes/s) |
+| ----------- | ------------ | ------------ | ------------ | ------------ | ------------ | ----------------- | ------------------ |
+| Write Speed | 658148       | 655762       | 656099       | 653459       | 657908       | 5.25              | 0.66               |
+| Read Speed  | 997525       | 992491       | 1004302      | 1005304      | 1009058      | 8.01              | 1.00               |
+
+## SDIO 4 bit - Multi Sector Lazy Writing
+
+| Type        | Test 1 (B/s) | Test 2 (B/s) | Test 3 (B/s) | Test 4 (B/s) | Test 5 (B/s) | Average (Mbits/s) | Average (MBytes/s) |
+| ----------- | ------------ | ------------ | ------------ | ------------ | ------------ | ----------------- | ------------------ |
+| Write Speed | 925988       | 921394       | 925877       | 926333       | 923891       | 7.41              | 0.92               |
+| Read Speed  | 993128       | 979758       | 1002773      | 1005894      | 1012804      | 7.99              | 1.00               |

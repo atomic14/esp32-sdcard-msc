@@ -11,6 +11,11 @@ SDCardMultiSector::SDCardMultiSector(Stream &debug, const char *mount_point, gpi
 {
 }
 
+SDCardMultiSector::SDCardMultiSector(Stream &debug, const char *mount_point, gpio_num_t clk, gpio_num_t cmd, gpio_num_t d0, gpio_num_t d1, gpio_num_t d2, gpio_num_t d3)
+: SDCardIdf(debug, mount_point, clk, cmd, d0, d1, d2, d3)
+{
+}
+
 bool SDCardMultiSector::writeSectors(uint8_t *src, size_t start_sector, size_t sector_count) {
   xSemaphoreTake(m_mutex, portMAX_DELAY);
   digitalWrite(GPIO_NUM_2, HIGH);
