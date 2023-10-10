@@ -1,71 +1,71 @@
+# Accompanying Video
+
+[![WiFi Streaming](https://img.youtube.com/vi/ocXs1yxsux4/0.jpg)](https://www.youtube.com/watch?v=ocXs1yxsux4)
+
+# ESP32-S3 SD Card Performance Tests - USBMSC and Direct From ESP32
 
 # SD Card Performance Directly Connected to PC
+
+This is just a baseline to see what the SD Card is actually capable of when connected directly to the SD Card reader of my Mac Book Pro.
 
 |   | Average Speed (B/s) | Average Speed (Mbytes/s) | Average Speed (Mbits/s) |
 |---|---------------------|--------------------------|-------------------------|
 | **Write** | 27,297,357 | 26.03 | 208.26 |
 | **Read**  | 94,395,970 | 90.02 | 720.18 |
 
-Feel free to use this summarized data as needed!
 
-# SPI 20MHz Clock
+# ESP32 <-> SD Card Performance
 
+This test write 100MB of raw sectors to the SD Card and then reads it back. Enable this mode ny uncommenting the line in `main.cpp`
+
+```cpp
+// #define SD_CARD_SPEED_TEST
+```
+
+All values are in MBytes/s
+
+| Operation | 1Bit SPI 20 MHz  | 4Bit SDIO 40 MHz |
+| --------- | ---------------- | ---------------- |
+| Write     | 1.01             | 2.34             |
+| Read      | 1.67             | 8.39             |
+
+
+# USB <-> ESP32 <-> SD Card: Using USBMSC
+
+You can switch between these different modes by chaning the class used for the SDCard
+
+```cpp
+#ifdef USE_SDIO
+  card = new SDCardLazyWrite(Serial, "/sd", SD_CARD_CLK, SD_CARD_CMD, SD_CARD_DAT0, SD_CARD_DAT1, SD_CARD_DAT2, SD_CARD_DAT3);
+#else
+  card = new SDCardLazyWrite(Serial, "/sd", SD_CARD_MISO, SD_CARD_MOSI, SD_CARD_CLK, SD_CARD_CS);
+#endif
+```
+
+You can use the following classes: `SDCardLazyWrite`, `SDCardMultiWrite`, `SDCardArduino` - NOTE - `SDCardArduino` cannot be used in  SDIO mode as the readRAW and writeRAW functions don't exist on the SDMMC class.
+ 
 ## Arduino SD Card Code - Single Sector Writing
 
 
-| Type        | Test 1 (B/s) | Test 2 (B/s) | Test 3 (B/s) | Test 4 (B/s) | Test 5 (B/s) | Average (Mbits/s) | Average (MBytes/s) |
-| ----------- | ------------ | ------------ | ------------ | ------------ | ------------ | ----------------- | ------------------ |
-| Write Speed | 279717       | 276096       | 279594       | 279577       | 275318       | 2.22              | 0.278              |
-| Read Speed  | 506918       | 506782       | 506046       | 506007       | 511699       | 4.06              | 0.507              |
+| Type        | SPI 20MHz          | 4Bit SDIO 40 MHz |
+| ----------- | ------------------ | ---------------- |
+| Write Speed | 0.278              | NA              |
+| Read Speed  | 0.507              | NA              |
 
 
 ## IDF SD Card Code - Multi Sector Writing
 
 
-| Type        | Test 1 (B/s) | Test 2 (B/s) | Test 3 (B/s) | Test 4 (B/s) | Test 5 (B/s) | Average (Mbits/s) | Average (MBytes/s) |
-| ----------- | ------------ | ------------ | ------------ | ------------ | ------------ | ----------------- | ------------------ |
-| Write Speed | 476410       | 481890       | 482435       | 483092       | 481733       | 3.85              | 0.481              |
-| Read Speed  | 667243       | 670885       | 671615       | 673308       | 674225       | 5.37              | 0.671              |
+| Type        | SPI 20MHz          | 4Bit SDIO 40 MHz |
+| ----------- | ------------------ |------------------ |
+| Write Speed | 0.481              |0.66               |
+| Read Speed  | 0.671              |1.00               |
 
 
 ## IDF SD Card Code - Multi Sector Lazy Writing
 
-| Type        | Test 1 (B/s) | Test 2 (B/s) | Test 3 (B/s) | Test 4 (B/s) | Test 5 (B/s) | Average (Mbits/s) | Average (MBytes/s) |
-| ----------- | ------------ | ------------ | ------------ | ------------ | ------------ | ----------------- | ------------------ |
-| Write Speed | 918150       | 915334       | 911385       | 913506       | 915925       | 7.32              | 0.915              |
-| Read Speed  | 668170       | 665781       | 673559       | 674341       | 675787       | 5.37              | 0.672              |
+| Type        | SPI 20MHz          | 4Bit SDIO 40 MHz |
+| ----------- | ------------------ | ------------------ |
+| Write Speed | 0.915              | 0.92               |
+| Read Speed  | 0.672              | 1.00               |
 
-## Comparison
-
-![Average Speeds Chart](images/average_speeds_chart.svg)
-
-# Raw SD Card Test Writing 100MB
-
-20MHz SPI Clock
-
-| Operation | Size (MBytes) | Duration (ms) | Speed (Mbits/s) | Speed (MBytes/s) |
-| --------- | ------------- | ------------- | --------------- | ---------------- |
-| Write     | 100           | 103779        | 8.08            | 1.01             |
-| Read      | 100           | 62884         | 13.36           | 1.67             |
-
-
-# SDIO 4-bit 40MHz Clock
-
-| Operation | Size (MBytes) | Duration (ms) | Speed (Mbits/s)        | Speed (MBytes/s)       |
-|-----------|---------------|---------------|------------------------|------------------------|
-| Write     | 100.0         | 44828         | 18.71                  | 2.34                   |
-| Read      | 100.0         | 12492         | 67.15                  | 8.39                   |
-
-## SDIO 4 bit - Multi Sector Writing
-
-| Type        | Test 1 (B/s) | Test 2 (B/s) | Test 3 (B/s) | Test 4 (B/s) | Test 5 (B/s) | Average (Mbits/s) | Average (MBytes/s) |
-| ----------- | ------------ | ------------ | ------------ | ------------ | ------------ | ----------------- | ------------------ |
-| Write Speed | 658148       | 655762       | 656099       | 653459       | 657908       | 5.25              | 0.66               |
-| Read Speed  | 997525       | 992491       | 1004302      | 1005304      | 1009058      | 8.01              | 1.00               |
-
-## SDIO 4 bit - Multi Sector Lazy Writing
-
-| Type        | Test 1 (B/s) | Test 2 (B/s) | Test 3 (B/s) | Test 4 (B/s) | Test 5 (B/s) | Average (Mbits/s) | Average (MBytes/s) |
-| ----------- | ------------ | ------------ | ------------ | ------------ | ------------ | ----------------- | ------------------ |
-| Write Speed | 925988       | 921394       | 925877       | 926333       | 923891       | 7.41              | 0.92               |
-| Read Speed  | 993128       | 979758       | 1002773      | 1005894      | 1012804      | 7.99              | 1.00               |
