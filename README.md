@@ -4,14 +4,16 @@
 
 # ESP32-S3 SD Card Performance Tests - USBMSC and Direct From ESP32
 
+The ESP32-S3 can act as a Mass Storage Class device (USBMSC). This allows us to connect and SD Card to the ESP32 and then access it from a PC.
+
 # SD Card Performance Directly Connected to PC
 
 This is just a baseline to see what the SD Card is actually capable of when connected directly to the SD Card reader of my Mac Book Pro.
 
-|   | Average Speed (B/s) | Average Speed (Mbytes/s) | Average Speed (Mbits/s) |
-|---|---------------------|--------------------------|-------------------------|
-| **Write** | 27,297,357 | 26.03 | 208.26 |
-| **Read**  | 94,395,970 | 90.02 | 720.18 |
+|   | Average Speed (B/s) | Average Speed (Mbytes/s) |
+|---|---------------------|--------------------------|
+| **Write** | 27,297,357 | 26.03 |
+| **Read**  | 94,395,970 | 90.02 |
 
 
 # ESP32 <-> SD Card Performance
@@ -32,7 +34,9 @@ All values are in MBytes/s
 
 # USB <-> ESP32 <-> SD Card: Using USBMSC
 
-You can switch between these different modes by chaning the class used for the SDCard
+There are three different configurations in this repo. The basic Arduino code uses the SD class to connect to the SD Card using SPI. This only exposes methods for writing/reading one sector at a time which has a considerable amount of overhead. Using IDF code we can write/read multiple sectors at once. And if we move writing to the SD Card to a background task we can get even better performance - but this comes at the cost of no error handling...
+
+You can switch between these different modes by changing the class used for the SDCard
 
 ```cpp
 #ifdef USE_SDIO
@@ -69,3 +73,6 @@ You can use the following classes: `SDCardLazyWrite`, `SDCardMultiWrite`, `SDCar
 | Write Speed | 0.915              | 0.92               |
 | Read Speed  | 0.672              | 1.00               |
 
+# Summary
+
+Getting up to almost 1MByte/s on both reading and writing is pretty impressive but it probably the best that can be done given the limitations of USB1.1 full speed mode.
